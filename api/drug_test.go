@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"net/http"
@@ -8,7 +8,8 @@ import (
 
 func TestAddDrug(t *testing.T) {
 
-	testServer := NewServer()
+	drugHandler := &DrugHandler{}
+	testServer := NewServer(*drugHandler)
 	req, _ := http.NewRequest(http.MethodPost, "/drugs", nil)
 	res := httptest.NewRecorder()
 	testServer.router.ServeHTTP(res, req)
