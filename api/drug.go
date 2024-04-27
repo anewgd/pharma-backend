@@ -1,13 +1,37 @@
 package api
 
-import "github.com/gin-gonic/gin"
+import (
+	"net/http"
 
-type DrugHandler struct{}
+	"github.com/anewgd/pharma_backend/service"
+	"github.com/gin-gonic/gin"
+)
 
-func NewDrugHandler() *DrugHandler {
-	return &DrugHandler{}
+type DrugHandler struct {
+	drugService service.DrugService
 }
 
-func (d *DrugHandler) addDrug(ctx *gin.Context) {
-	ctx.String(200, "test drug")
+func NewDrugHandler(drugService service.DrugService) *DrugHandler {
+	return &DrugHandler{
+		drugService: drugService,
+	}
+}
+
+func (d *DrugHandler) addDrugHandler(ctx *gin.Context) {
+
+	req := service.CreateDrugRequest{}
+	err := ctx.ShouldBindJSON(&req)
+	if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, "bad request")
+		return
+	}
+
+	//You are sending the gin context here. it should be the context of the request
+	drug, err := d.drugService.AddDrug(ctx, req)
+	if err != nil {
+		ctx.AbortWithStatusJSON(500, gin.H{
+			"error": err.Error(),
+		})
+	}
+	ctx.JSON(200, drug)
 }

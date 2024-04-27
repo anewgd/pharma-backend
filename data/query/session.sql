@@ -1,0 +1,17 @@
+-- name: CreateUserSession :one
+INSERT INTO user_sessions (
+    session_id,
+    user_id,
+    refresh_token,
+    expires_at
+) VALUES (
+  $1, $2, $3, $4
+) RETURNING *;
+
+-- name: GetUserSession :one
+SELECT * FROM user_sessions
+WHERE session_id = $1 LIMIT 1;
+
+-- name: DeleteUserSession :exec
+DELETE FROM user_sessions
+WHERE user_id = $1;
