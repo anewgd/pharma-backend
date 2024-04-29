@@ -23,7 +23,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("cannot create service: %s", err.Error())
 	}
-	pharmacyService := service.NewPharmacyService(store)
+	pharmacyService, err := service.NewPharmacyService(store)
+	if err != nil {
+		log.Fatalf("cannot create pharmacy service: %s", err.Error())
+	}
 
 	drugHandler := api.NewDrugHandler(drugService)
 	userHandler := api.NewUserHandler(userService)

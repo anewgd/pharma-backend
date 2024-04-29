@@ -6,23 +6,38 @@ import (
 
 	db "github.com/anewgd/pharma_backend/data/sqlc"
 	"github.com/anewgd/pharma_backend/util"
+	"github.com/anewgd/pharma_backend/util/token"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 )
 
 type PharmacyService interface {
 	CreatePharmacy(ctx context.Context, pharmaReq CreatePharmacyRequest) (CreatePharmacyResponse, error)
 	CreatePharmacyBranch(ctx context.Context, pharmaReq CreatePharmacyBranchRequest) (db.PharmacyBranch, error)
 	CreateBranchManager(ctx context.Context, pharmaReq CreatePharmacyManagerRequest) (db.Pharmacist, error)
+	PharmacyLogin(ctx context.Context, pharmaReq LoginUserRequest) (LoginUserResponse, error)
 }
 
 type PharmacyServ struct {
-	store db.Store
+	store      db.Store
+	tokenMaker token.Maker
+	config     util.Config
 }
 
-func NewPharmacyService(store db.Store) *PharmacyServ {
-	return &PharmacyServ{
-		store: store,
+func NewPharmacyService(store db.Store) (*PharmacyServ, error) {
+	config, err := util.LoadConfig(".")
+	if err != nil {
+		return nil, err
 	}
+	tokenMaker, err := token.NewPasetoMaker(config.TokenSymmetricKey)
+	if err != nil {
+		return nil, err
+	}
+	return &PharmacyServ{
+		store:      store,
+		tokenMaker: tokenMaker,
+		config:     config,
+	}, nil
 }
 
 func (p *PharmacyServ) CreatePharmacy(ctx context.Context, pharmaReq CreatePharmacyRequest) (CreatePharmacyResponse, error) {
@@ -114,4 +129,60 @@ func (p *PharmacyServ) CreateBranchManager(ctx context.Context, pharmaReq Create
 		return res, err
 	}
 	return manager, nil
+}
+
+func (p *PharmacyServ) PharmacyLogin(ctx context.Context, pharmaReq LoginUserRequest) (LoginUserResponse, error) {
+	if err := pharmaReq.Validate(); err != nil {
+		return LoginUserResponse{}, err
+	}
+
+	pharmacist, err := p.store.GetPharmacistByUsername(ctx, pharmaReq.Username)
+	if err != nil {
+		if err.Error() == pgx.ErrNoRows.Error() {
+			return LoginUserResponse{}, fmt.Errorf("user not found")
+		}
+		return LoginUserResponse{}, err
+	}
+
+	if err = util.CheckPassword(pharmaReq.Password, pharmacist.Password); err != nil {
+		return LoginUserResponse{}, fmt.Errorf("incorrect password")
+	}
+
+	accessToken, accessTokenPayload, err := p.tokenMaker.CreateToken(pharmacist.PharmacistID, pharmacist.Role, p.config.AccessTokenDuration)
+	if err != nil {
+		return LoginUserResponse{}, err
+	}
+
+	refreshToken, refreshTokenPayload, err := p.tokenMaker.CreateToken(pharmacist.PharmacistID, pharmacist.Role, p.config.RefreshTokenDuration)
+	if err != nil {
+		return LoginUserResponse{}, err
+	}
+
+	err = p.store.DeletePharmacistSession(ctx, pharmacist.PharmacistID)
+	if err != nil {
+		return LoginUserResponse{}, err
+	}
+	//TODO: hash or encrypt the refreshToken before storing it
+
+	_, err = p.store.CreatePharmacistSession(ctx, db.CreatePharmacistSessionParams{
+		SessionID:    refreshTokenPayload.ID,
+		PharmacistID: pharmacist.PharmacistID,
+		RefreshToken: refreshToken,
+		ExpiresAt:    refreshTokenPayload.ExpiredAt,
+	})
+
+	if err != nil {
+		return LoginUserResponse{}, err
+	}
+
+	resp := LoginUserResponse{
+		Username:              pharmacist.Username,
+		Email:                 pharmacist.Email,
+		AccessToken:           accessToken,
+		AccessTokenExpiresAt:  accessTokenPayload.ExpiredAt,
+		RefreshToken:          refreshToken,
+		RefreshTokenExpiresAt: refreshTokenPayload.ExpiredAt,
+	}
+
+	return resp, nil
 }

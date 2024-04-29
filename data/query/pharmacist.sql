@@ -12,3 +12,7 @@ INSERT INTO pharmacists (
 -- name: GetPharmacist :one
 SELECT * FROM pharmacists
 WHERE pharmacist_id = $1 LIMIT 1;
+
+-- name: GetPharmacistByUsername :one
+SELECT * FROM pharmacists
+WHERE username = $1 LIMIT 1;

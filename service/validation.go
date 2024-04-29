@@ -2,7 +2,6 @@ package service
 
 import (
 	"regexp"
-	"time"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
@@ -75,6 +74,8 @@ func (pharmaReq CreatePharmacyBranchRequest) Validate() error {
 }
 
 func (c CreateDrugRequest) Validate() error {
+	// expDate := c.ExpirationDate.String()
+
 	return validation.ValidateStruct(&c,
 		validation.Field(&c.BrandName,
 			validation.Required,
@@ -88,16 +89,16 @@ func (c CreateDrugRequest) Validate() error {
 		),
 		validation.Field(&c.Quantity,
 			validation.Required,
-			is.Int,
 			validation.Max(100000),
 			validation.Min(1),
 		),
 		validation.Field(&c.ExpirationDate,
-			validation.Date("2006-01-01").Min(time.Now()).Max(time.Now().AddDate(10, 0, 0)),
+			validation.Required,
+			validation.Date("2006-01-02"),
 		),
 
 		validation.Field(&c.ManufacturingDate,
-			validation.Date("2006-01-01").Max(time.Now()).Min(time.Now().AddDate(-10, 0, 0)),
+			validation.Date("2006-01-02"),
 		),
 	)
 }
@@ -140,6 +141,7 @@ func (usrReq CreatePharmacyManagerRequest) Validate() error {
 		),
 	)
 }
+
 // func (usrReq CreatePharmacistRequest) Validate() error {
 // 	return validation.ValidateStruct(&usrReq,
 // 		validation.Field(&usrReq.PharmacyID, is.UUID),

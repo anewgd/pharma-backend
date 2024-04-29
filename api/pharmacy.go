@@ -133,6 +133,30 @@ func getContext(ctx *gin.Context) (context.Context, error) {
 	}
 
 	c = context.WithValue(c, util.UserID, usrPayload.UserID)
+	c = context.WithValue(c, util.Role, usrPayload.Role)
 
 	return c, nil
+}
+
+func (p *PharmacyHandler) pharmacyLogin(ctx *gin.Context) {
+	c := ctx.Request.Context()
+	req := service.LoginUserRequest{}
+
+	err := ctx.ShouldBindJSON(&req)
+	if err != nil {
+		ctx.AbortWithStatusJSON(400, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	res, err := p.pharmacyService.PharmacyLogin(c, req)
+	if err != nil {
+		ctx.AbortWithStatusJSON(400, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(200, res)
 }

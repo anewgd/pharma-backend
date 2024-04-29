@@ -71,3 +71,23 @@ func (q *Queries) GetPharmacist(ctx context.Context, pharmacistID uuid.UUID) (Ph
 	)
 	return i, err
 }
+
+const getPharmacistByUsername = `-- name: GetPharmacistByUsername :one
+SELECT pharmacist_id, pharmacy_branch_id, username, password, email, role, created_at FROM pharmacists
+WHERE username = $1 LIMIT 1
+`
+
+func (q *Queries) GetPharmacistByUsername(ctx context.Context, username string) (Pharmacist, error) {
+	row := q.db.QueryRow(ctx, getPharmacistByUsername, username)
+	var i Pharmacist
+	err := row.Scan(
+		&i.PharmacistID,
+		&i.PharmacyBranchID,
+		&i.Username,
+		&i.Password,
+		&i.Email,
+		&i.Role,
+		&i.CreatedAt,
+	)
+	return i, err
+}
