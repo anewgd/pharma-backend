@@ -7,7 +7,6 @@ import (
 	db "github.com/anewgd/pharma_backend/data/sqlc"
 	"github.com/anewgd/pharma_backend/util"
 	"github.com/anewgd/pharma_backend/util/token"
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -42,12 +41,18 @@ func NewPharmacyService(store db.Store) (*PharmacyServ, error) {
 
 func (p *PharmacyServ) CreatePharmacy(ctx context.Context, pharmaReq CreatePharmacyRequest) (CreatePharmacyResponse, error) {
 
-	pharmaResp := CreatePharmacyResponse{}
-	userID := ctx.Value(util.UserID)
+	role, err := util.GetUserRole(ctx)
+	if err != nil {
+		return CreatePharmacyResponse{}, err
+	}
+	if role != util.Admin {
+		return CreatePharmacyResponse{}, fmt.Errorf("insufficient permission")
+	}
 
-	id, ok := (userID).(uuid.UUID)
-	if !ok {
-		return pharmaResp, fmt.Errorf("cannot find user id")
+	pharmaResp := CreatePharmacyResponse{}
+	userID, err := util.GetUserID(ctx)
+	if err != nil {
+		return pharmaResp, err
 	}
 	if err := pharmaReq.Validate(); err != nil {
 		return pharmaResp, err
@@ -55,7 +60,7 @@ func (p *PharmacyServ) CreatePharmacy(ctx context.Context, pharmaReq CreatePharm
 
 	pharmacy, err := p.store.CreatePharmacy(ctx, db.CreatePharmacyParams{
 		PharmacyName: pharmaReq.PharmacyName,
-		UserID:       id,
+		UserID:       userID,
 	})
 	if err != nil {
 		return pharmaResp, err
@@ -66,6 +71,15 @@ func (p *PharmacyServ) CreatePharmacy(ctx context.Context, pharmaReq CreatePharm
 }
 
 func (p *PharmacyServ) CreatePharmacyBranch(ctx context.Context, pharmaReq CreatePharmacyBranchRequest) (db.PharmacyBranch, error) {
+
+	role, err := util.GetUserRole(ctx)
+	if err != nil {
+		return db.PharmacyBranch{}, err
+	}
+	if role != util.Admin {
+		return db.PharmacyBranch{}, fmt.Errorf("insufficient permission")
+	}
+
 	res := db.PharmacyBranch{}
 	userID, err := util.GetUserID(ctx)
 	if err != nil {
@@ -99,10 +113,13 @@ func (p *PharmacyServ) CreatePharmacyBranch(ctx context.Context, pharmaReq Creat
 
 func (p *PharmacyServ) CreateBranchManager(ctx context.Context, pharmaReq CreatePharmacyManagerRequest) (db.Pharmacist, error) {
 	res := db.Pharmacist{}
-	// // userID, err := util.GetUserID(ctx)
-	// if err != nil {
-	// 	return res, err
-	// }
+	role, err := util.GetUserRole(ctx)
+	if err != nil {
+		return res, err
+	}
+	if role != util.Admin {
+		return res, fmt.Errorf("insufficient permission")
+	}
 
 	if err := pharmaReq.Validate(); err != nil {
 		return res, err

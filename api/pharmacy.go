@@ -1,12 +1,8 @@
 package api
 
 import (
-	"context"
-	"fmt"
-
 	"github.com/anewgd/pharma_backend/service"
 	"github.com/anewgd/pharma_backend/util"
-	"github.com/anewgd/pharma_backend/util/token"
 	"github.com/gin-gonic/gin"
 )
 
@@ -22,23 +18,13 @@ func NewPharmacyHandler(pharmacyService service.PharmacyService) *PharmacyHandle
 
 func (p *PharmacyHandler) createPharmacy(ctx *gin.Context) {
 
-	c := ctx.Request.Context()
+	c, err := util.GetContextWithValues(ctx)
 
-	payload, ok := ctx.Get(authorizationHeaderKey)
-	if !ok {
+	if err != nil {
 		ctx.AbortWithStatusJSON(500, gin.H{
-			"error": "cannot find authorization payload",
+			"error": err.Error(),
 		})
-		return
 	}
-	usrPayload, ok := (payload).(*token.Payload)
-	if !ok {
-		ctx.AbortWithStatusJSON(500, gin.H{
-			"error": "can't get user id",
-		})
-		return
-	}
-	c = context.WithValue(c, util.UserID, usrPayload.UserID)
 
 	req := service.CreatePharmacyRequest{}
 
@@ -62,7 +48,7 @@ func (p *PharmacyHandler) createPharmacy(ctx *gin.Context) {
 }
 
 func (p *PharmacyHandler) createPharmacyBranch(ctx *gin.Context) {
-	c, err := getContext(ctx)
+	c, err := util.GetContextWithValues(ctx)
 	if err != nil {
 		ctx.AbortWithStatusJSON(400, gin.H{
 			"error": err.Error(),
@@ -91,7 +77,7 @@ func (p *PharmacyHandler) createPharmacyBranch(ctx *gin.Context) {
 
 func (p *PharmacyHandler) createManager(ctx *gin.Context) {
 
-	c, err := getContext(ctx)
+	c, err := util.GetContextWithValues(ctx)
 	if err != nil {
 		ctx.AbortWithStatusJSON(400, gin.H{
 			"error": err.Error(),
@@ -117,25 +103,6 @@ func (p *PharmacyHandler) createManager(ctx *gin.Context) {
 
 	ctx.JSON(200, res)
 
-}
-
-func getContext(ctx *gin.Context) (context.Context, error) {
-
-	c := ctx.Request.Context()
-	payload, ok := ctx.Get(authorizationHeaderKey)
-	if !ok {
-		return nil, fmt.Errorf("cannot find authorization payload")
-	}
-
-	usrPayload, ok := (payload).(*token.Payload)
-	if !ok {
-		return nil, fmt.Errorf("can't get user id")
-	}
-
-	c = context.WithValue(c, util.UserID, usrPayload.UserID)
-	c = context.WithValue(c, util.Role, usrPayload.Role)
-
-	return c, nil
 }
 
 func (p *PharmacyHandler) pharmacyLogin(ctx *gin.Context) {

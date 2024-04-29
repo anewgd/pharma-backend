@@ -5,20 +5,15 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/anewgd/pharma_backend/util"
 	"github.com/anewgd/pharma_backend/util/token"
 	"github.com/gin-gonic/gin"
-)
-
-const (
-	authorizationHeaderKey  = "authorization"
-	authorizationTypeBearer = "bearer"
-	authorizationPayloadKey = "authorization_payload"
 )
 
 func authMiddleware(tokenMaker token.Maker) gin.HandlerFunc {
 
 	return func(ctx *gin.Context) {
-		authorizationHeader := ctx.GetHeader(authorizationHeaderKey)
+		authorizationHeader := ctx.GetHeader(util.AuthorizationHeaderKey)
 		if len(authorizationHeader) == 0 {
 			ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{
 				"error": "no authorization header found",
@@ -35,7 +30,7 @@ func authMiddleware(tokenMaker token.Maker) gin.HandlerFunc {
 		}
 
 		authorizationType := strings.ToLower(fields[0])
-		if authorizationType != authorizationTypeBearer {
+		if authorizationType != util.AuthorizationTypeBearer {
 			ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{
 				"error": fmt.Errorf("no authorization type %s", authorizationType).Error(),
 			})
@@ -51,7 +46,7 @@ func authMiddleware(tokenMaker token.Maker) gin.HandlerFunc {
 			})
 			return
 		}
-		ctx.Set(authorizationHeaderKey, authPayload)
+		ctx.Set(util.AuthorizationPayloadKey, authPayload)
 		ctx.Next()
 	}
 }

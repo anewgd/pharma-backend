@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/anewgd/pharma_backend/util/token"
+	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
 
@@ -31,4 +33,23 @@ func GetUserRole(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("cannot find user role id")
 	}
 	return userRole, nil
+}
+
+func GetContextWithValues(ctx *gin.Context) (context.Context, error) {
+
+	c := ctx.Request.Context()
+	payload, ok := ctx.Get(AuthorizationPayloadKey)
+	if !ok {
+		return nil, fmt.Errorf("cannot find authorization payload")
+	}
+
+	usrPayload, ok := (payload).(*token.Payload)
+	if !ok {
+		return nil, fmt.Errorf("can't get user id")
+	}
+
+	c = context.WithValue(c, UserID, usrPayload.UserID)
+	c = context.WithValue(c, Role, usrPayload.Role)
+
+	return c, nil
 }
