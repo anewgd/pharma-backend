@@ -16,6 +16,7 @@ func NewUserHandler(userService service.UserService) *UserHandler {
 }
 
 func (usrHandler *UserHandler) createUser(ctx *gin.Context) {
+	c := ctx.Request.Context()
 	req := service.CreateUserRequest{}
 
 	err := ctx.ShouldBindJSON(&req)
@@ -26,7 +27,7 @@ func (usrHandler *UserHandler) createUser(ctx *gin.Context) {
 		return
 	}
 
-	res, err := usrHandler.userService.CreateUser(ctx, req)
+	res, err := usrHandler.userService.CreateUser(c, req)
 	if err != nil {
 		ctx.AbortWithStatusJSON(400, gin.H{
 			"error": err.Error(),
@@ -41,6 +42,7 @@ func (usrHandler *UserHandler) createUser(ctx *gin.Context) {
 func (UserHandler *UserHandler) loginUser(ctx *gin.Context) {
 	req := service.LoginUserRequest{}
 
+	c := ctx.Request.Context()
 	err := ctx.ShouldBindJSON(&req)
 	if err != nil {
 		ctx.AbortWithStatusJSON(400, gin.H{
@@ -49,7 +51,7 @@ func (UserHandler *UserHandler) loginUser(ctx *gin.Context) {
 		return
 	}
 
-	res, err := UserHandler.userService.LoginUser(ctx, req)
+	res, err := UserHandler.userService.LoginUser(c, req)
 	if err != nil {
 		ctx.AbortWithStatusJSON(400, gin.H{
 			"error": err.Error(),

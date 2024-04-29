@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/anewgd/pharma_backend/service"
+	"github.com/anewgd/pharma_backend/util"
 	"github.com/gin-gonic/gin"
 )
 
@@ -19,7 +20,7 @@ func NewDrugHandler(drugService service.DrugService) *DrugHandler {
 
 func (d *DrugHandler) addDrugHandler(ctx *gin.Context) {
 
-	c, err := getContext(ctx)
+	c, err := util.GetContextWithValues(ctx)
 	if err != nil {
 		ctx.AbortWithStatusJSON(400, gin.H{
 			"error": err.Error(),
