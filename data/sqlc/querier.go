@@ -13,12 +13,16 @@ import (
 type Querier interface {
 	CreateDrug(ctx context.Context, arg CreateDrugParams) (Drug, error)
 	CreatePharmacist(ctx context.Context, arg CreatePharmacistParams) (Pharmacist, error)
+	CreatePharmacistSession(ctx context.Context, arg CreatePharmacistSessionParams) (PharmacistSession, error)
 	CreatePharmacy(ctx context.Context, arg CreatePharmacyParams) (Pharmacy, error)
 	CreatePharmacyBranch(ctx context.Context, arg CreatePharmacyBranchParams) (PharmacyBranch, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	CreateUserSession(ctx context.Context, arg CreateUserSessionParams) (UserSession, error)
+	DeletePharmacistSession(ctx context.Context, pharmacistID uuid.UUID) error
 	DeleteUserSession(ctx context.Context, userID uuid.UUID) error
 	GetPharmacist(ctx context.Context, pharmacistID uuid.UUID) (Pharmacist, error)
+	GetPharmacistByUsername(ctx context.Context, username string) (Pharmacist, error)
+	GetPharmacistSession(ctx context.Context, sessionID uuid.UUID) (PharmacistSession, error)
 	GetPharmacy(ctx context.Context, pharmacyID uuid.UUID) (Pharmacy, error)
 	GetPharmacyBrachByName(ctx context.Context, pharmacyBranchName string) (PharmacyBranch, error)
 	GetPharmacyByAdminID(ctx context.Context, userID uuid.UUID) (Pharmacy, error)

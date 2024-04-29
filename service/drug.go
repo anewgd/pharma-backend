@@ -2,30 +2,18 @@ package service
 
 import (
 	"context"
-	"time"
 
-	"github.com/google/uuid"
+	db "github.com/anewgd/pharma_backend/data/sqlc"
 )
 
 type DrugService interface {
-	AddDrug(ctx context.Context, drugData CreateDrugRequest) (*CreateDrugResponse, error)
+	AddDrug(ctx context.Context, drugData CreateDrugRequest) (db.Drug, error)
 }
 
 type CreateDrugRequest struct {
-	BrandName         string    `json:"brand_name"`
-	GenericName       string    `json:"generic_name"`
-	Quantity          int64     `json:"quantity"`
-	ExpirationDate    time.Time `json:"expiration_date"`
-	ManufacturingDate time.Time `json:"manufacturing_date"`
-}
-type CreateDrugResponse struct {
-	DrugID            uuid.UUID `json:"drug_id"`
-	PharmacyID        uuid.UUID `json:"pharmacy_id"`
-	BrandName         string    `json:"brand_name"`
-	GenericName       string    `json:"generic_name"`
-	Quantity          int64     `json:"quantity"`
-	ExpirationDate    time.Time `json:"expiration_date"`
-	ManufacturingDate time.Time `json:"manufacturing_date"`
-	// UserID            uuid.UUID `json:"user_id"`
-	AddedAt           time.Time `json:"added_at"`
+	BrandName         string `json:"brand_name"`
+	GenericName       string `json:"generic_name"`
+	Quantity          int    `json:"quantity"`
+	ExpirationDate    string `json:"expiration_date" binding:"required"`
+	ManufacturingDate string `json:"manufacturing_date" binding:"required"`
 }

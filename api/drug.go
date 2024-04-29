@@ -19,19 +19,26 @@ func NewDrugHandler(drugService service.DrugService) *DrugHandler {
 
 func (d *DrugHandler) addDrugHandler(ctx *gin.Context) {
 
-	req := service.CreateDrugRequest{}
-	err := ctx.ShouldBindJSON(&req)
+	c, err := getContext(ctx)
 	if err != nil {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, "bad request")
+		ctx.AbortWithStatusJSON(400, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	req := service.CreateDrugRequest{}
+	err = ctx.ShouldBindJSON(&req)
+	if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, err.Error())
 		return
 	}
 
-	//You are sending the gin context here. it should be the context of the request
-	drug, err := d.drugService.AddDrug(ctx, req)
+	drug, err := d.drugService.AddDrug(c, req)
 	if err != nil {
 		ctx.AbortWithStatusJSON(500, gin.H{
 			"error": err.Error(),
 		})
+		return
 	}
 	ctx.JSON(200, drug)
 }

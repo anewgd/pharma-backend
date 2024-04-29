@@ -23,15 +23,20 @@ func NewServer(drugHandler *DrugHandler, userHandler *UserHandler, pharmacyHandl
 func (s *Server) setupRoutes() *gin.Engine {
 
 	router := gin.Default()
-	router.POST("/drugs", s.drugHandler.addDrugHandler)
 	router.POST("/users", s.userHandler.createUser)
 	router.POST("/login", s.userHandler.loginUser)
+	router.POST("/pharmacy/login", s.pharmacyHandler.pharmacyLogin)
 
 	adminRoute := router.Group("/admin").Use(authMiddleware(*s.userHandler.userService.GetTokenMaker()))
 
 	adminRoute.POST("/pharmacies", s.pharmacyHandler.createPharmacy)
 	adminRoute.POST("/branches", s.pharmacyHandler.createPharmacyBranch)
 	adminRoute.POST("/managers", s.pharmacyHandler.createManager)
+
+	managerRoute := router.Group("/manager").Use(authMiddleware(*s.userHandler.userService.GetTokenMaker()))
+	managerRoute.POST("/drugs", s.drugHandler.addDrugHandler).Use(authMiddleware(*s.userHandler.userService.GetTokenMaker()))
+
+	// pharmacistRoute := router.Group("/pharmacy").Use(authMiddleware(*s.userHandler.userService.GetTokenMaker()))
 
 	return router
 }
