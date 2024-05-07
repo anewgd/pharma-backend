@@ -8,13 +8,17 @@ import (
 func HashPassword(password string) (string, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		return "", errorx.InternalError.Wrap(err, "failed to hash password:")
+		return "", err
 	}
 	return string(hashedPassword), nil
 }
 
 func CheckPassword(password, hashPassword string) error {
-	return bcrypt.CompareHashAndPassword([]byte(hashPassword), []byte(password))
+	err := bcrypt.CompareHashAndPassword([]byte(hashPassword), []byte(password))
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func HashToken(token string) (string, error) {
@@ -26,5 +30,5 @@ func HashToken(token string) (string, error) {
 }
 
 func CheckToken(token, hashedToken string) error {
-	return bcrypt.CompareHashAndPassword([]byte(hashedToken), []byte(token))	
+	return bcrypt.CompareHashAndPassword([]byte(hashedToken), []byte(token))
 }

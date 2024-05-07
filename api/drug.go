@@ -20,26 +20,22 @@ func NewDrugHandler(drugService service.DrugService) *DrugHandler {
 
 func (d *DrugHandler) addDrugHandler(ctx *gin.Context) {
 
-	c, err := util.GetContextWithValues(ctx)
+	c, err := getContextWithValues(ctx)
 	if err != nil {
-		ctx.AbortWithStatusJSON(400, gin.H{
-			"error": err.Error(),
-		})
+		ctx.Error(err)
 		return
 	}
 	req := service.CreateDrugRequest{}
 	err = ctx.ShouldBindJSON(&req)
 	if err != nil {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, err.Error())
+		ctx.Error(util.NewErrorResponse(util.RequestError.New("malformed request body"), http.StatusBadRequest, "invalid request"))
 		return
 	}
 
 	drug, err := d.drugService.AddDrug(c, req)
 	if err != nil {
-		ctx.AbortWithStatusJSON(500, gin.H{
-			"error": err.Error(),
-		})
+		ctx.Error(err)
 		return
 	}
-	ctx.JSON(200, drug)
+	ctx.JSON(http.StatusCreated, drug)
 }

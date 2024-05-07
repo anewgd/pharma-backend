@@ -1,7 +1,10 @@
 package api
 
 import (
+	"net/http"
+
 	"github.com/anewgd/pharma_backend/service"
+	"github.com/anewgd/pharma_backend/util"
 	"github.com/gin-gonic/gin"
 )
 
@@ -21,21 +24,17 @@ func (usrHandler *UserHandler) createUser(ctx *gin.Context) {
 
 	err := ctx.ShouldBindJSON(&req)
 	if err != nil {
-		ctx.AbortWithStatusJSON(400, gin.H{
-			"error": err.Error(),
-		})
+		ctx.Error(util.NewErrorResponse(util.RequestError.New("malformed request body"), http.StatusBadRequest, "invalid request"))
 		return
 	}
 
 	res, err := usrHandler.userService.CreateUser(c, req)
 	if err != nil {
-		ctx.AbortWithStatusJSON(400, gin.H{
-			"error": err.Error(),
-		})
+		ctx.Error(err)
 		return
 	}
 
-	ctx.JSON(200, res)
+	ctx.JSON(http.StatusCreated, res)
 
 }
 
@@ -45,20 +44,16 @@ func (UserHandler *UserHandler) loginUser(ctx *gin.Context) {
 	c := ctx.Request.Context()
 	err := ctx.ShouldBindJSON(&req)
 	if err != nil {
-		ctx.AbortWithStatusJSON(400, gin.H{
-			"error": err.Error(),
-		})
+		ctx.Error(util.NewErrorResponse(util.RequestError.New("malformed request body"), http.StatusBadRequest, "invalid request"))
 		return
 	}
 
 	res, err := UserHandler.userService.LoginUser(c, req)
 	if err != nil {
-		ctx.AbortWithStatusJSON(400, gin.H{
-			"error": err.Error(),
-		})
+		ctx.Error(err)
 		return
 	}
 
-	ctx.JSON(200, res)
+	ctx.JSON(http.StatusOK, res)
 
 }
