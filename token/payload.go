@@ -2,9 +2,12 @@ package token
 
 import (
 	"errors"
+	"net/http"
 	"time"
 
+	"github.com/anewgd/pharma_backend/util"
 	"github.com/google/uuid"
+	"github.com/joomcode/errorx"
 )
 
 var ErrExpiredToken = errors.New("token has expired")
@@ -23,7 +26,7 @@ type Payload struct {
 func NewPayload(userID uuid.UUID, role string, duration time.Duration) (*Payload, error) {
 	tokenID, err := uuid.NewRandom()
 	if err != nil {
-		return nil, err
+		return nil, util.NewErrorResponse(errorx.InternalError.Wrap(err, "cannot generate token id"), http.StatusInternalServerError, "internal error")
 	}
 	payload := &Payload{
 		ID:        tokenID,
@@ -37,7 +40,7 @@ func NewPayload(userID uuid.UUID, role string, duration time.Duration) (*Payload
 
 func (payload *Payload) Valid() error {
 	if time.Now().After(payload.ExpiredAt) {
-		return ErrExpiredToken
+		return util.NewErrorResponse(util.AuthorizationError.New("token has expired"), http.StatusUnauthorized, "token has expired")
 	}
 	return nil
 }

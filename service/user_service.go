@@ -3,11 +3,13 @@ package service
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	db "github.com/anewgd/pharma_backend/data/sqlc"
+	"github.com/anewgd/pharma_backend/token"
 	"github.com/anewgd/pharma_backend/util"
-	"github.com/anewgd/pharma_backend/util/token"
 	"github.com/jackc/pgx/v5"
+	"github.com/joomcode/errorx"
 )
 
 type UserService interface {
@@ -25,11 +27,11 @@ type UserServ struct {
 func NewUserService(store db.Store) (*UserServ, error) {
 	config, err := util.LoadConfig(".")
 	if err != nil {
-		return nil, err
+		return nil, util.NewErrorResponse(errorx.InternalError.Wrap(err, "failed to load configuration file"), http.StatusInternalServerError, "internal server error")
 	}
 	tokenMaker, err := token.NewPasetoMaker(config.TokenSymmetricKey)
 	if err != nil {
-		return nil, err
+		return nil, util.NewErrorResponse(errorx.InternalError.Wrap(err, "failed to create token maker"), http.StatusInternalServerError, "internal error")
 	}
 	return &UserServ{
 		store:      store,
@@ -51,7 +53,7 @@ func (u *UserServ) CreateUser(ctx context.Context, userReq CreateUserRequest) (C
 
 	hashedPassword, err := util.HashPassword(userReq.Password)
 	if err != nil {
-		return usrResp, err
+		return usrResp, util.NewErrorResponse(errorx.InternalError.Wrap(err, "failed to hash password:"), http.StatusInternalServerError, "internal error")
 	}
 
 	user, err := u.store.CreateUser(ctx, db.CreateUserParams{
@@ -60,7 +62,10 @@ func (u *UserServ) CreateUser(ctx context.Context, userReq CreateUserRequest) (C
 		Email:    userReq.Email,
 	})
 	if err != nil {
-		return usrResp, err
+		if util.ErrorCode(err) == util.UniqueViolation {
+			return usrResp, util.NewErrorResponse(util.RequestError.New("user %q already exists", userReq.Username), http.StatusForbidden, fmt.Sprintf("user %q already exists", userReq.Username))
+		}
+		return usrResp, util.NewErrorResponse(errorx.InternalError.Wrap(err, "failed to create user"), http.StatusInternalServerError, "failed to create user")
 	}
 
 	usrResp = newCreateUserResponse(user)
@@ -77,28 +82,28 @@ func (u *UserServ) LoginUser(ctx context.Context, userReq LoginUserRequest) (Log
 	user, err := u.store.GetUser(ctx, userReq.Username)
 	if err != nil {
 		if err.Error() == pgx.ErrNoRows.Error() {
-			return LoginUserResponse{}, fmt.Errorf("user not found")
+			return LoginUserResponse{}, util.NewErrorResponse(util.RequestError.New("%q was not found", userReq.Username), http.StatusNotFound, fmt.Sprintf("%q was not found", userReq.Username))
 		}
-		return LoginUserResponse{}, err
+		return LoginUserResponse{}, util.NewErrorResponse(errorx.InternalError.Wrap(err, "failed to login user"), http.StatusInternalServerError, "failed to login user")
 	}
 
 	if err = util.CheckPassword(userReq.Password, user.Password); err != nil {
-		return LoginUserResponse{}, fmt.Errorf("incorrect password")
+		return LoginUserResponse{}, util.NewErrorResponse(util.AuthenticationError.Wrap(err, "incorrect password"), http.StatusUnauthorized, "incorrect password")
 	}
 
 	accessToken, accessTokenPayload, err := u.tokenMaker.CreateToken(user.UserID, user.Role, u.config.AccessTokenDuration)
 	if err != nil {
-		return LoginUserResponse{}, err
+		return LoginUserResponse{}, util.NewErrorResponse(errorx.InternalError.Wrap(err, "failed to create access token"), http.StatusInternalServerError, "internal error")
 	}
 
 	refreshToken, refreshTokenPayload, err := u.tokenMaker.CreateToken(user.UserID, user.Role, u.config.RefreshTokenDuration)
 	if err != nil {
-		return LoginUserResponse{}, err
+		return LoginUserResponse{}, util.NewErrorResponse(errorx.InternalError.Wrap(err, "failed to create refresh token"), http.StatusInternalServerError, "internal error")
 	}
 
 	err = u.store.DeleteUserSession(ctx, user.UserID)
 	if err != nil {
-		return LoginUserResponse{}, err
+		return LoginUserResponse{}, util.NewErrorResponse(errorx.InternalError.New("failed to delete user session"), http.StatusInternalServerError, "internal error")
 	}
 	//TODO: hash or encrypt the refreshToken before storing it
 
@@ -110,7 +115,7 @@ func (u *UserServ) LoginUser(ctx context.Context, userReq LoginUserRequest) (Log
 	})
 
 	if err != nil {
-		return LoginUserResponse{}, err
+		return LoginUserResponse{}, util.NewErrorResponse(errorx.InternalError.Wrap(err, "failed to create user session"), http.StatusInternalServerError, "internal error")
 	}
 
 	resp := LoginUserResponse{
