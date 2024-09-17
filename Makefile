@@ -6,7 +6,11 @@ create_db_container:
 create_db:
 	docker exec -it pharma_dev_db createdb --username=pharma_dev_user --owner=pharma_dev_user pharma-dev
 migrate_up:
-	migrate --path data/migration/ --database "postgresql://pharma_dev_user:pharmadevpass@localhost:5432/pharma-dev?sslmode=disable" --verbose up
+	migrate --path internal/constants/query/schemas --database "postgresql://pharma_dev_user:pharmadevpass@localhost:5432/pharma-dev?sslmode=disable" --verbose up
 migrate_down:
-	migrate --path data/migration/ --database "postgresql://pharma_dev_user:pharmadevpass@localhost:5432/pharma-dev?sslmode=disable" --verbose down
-.PHONY: generate_schema create_db_container create_db migrate_up migrate_down
+	migrate --path internal/constants/query/schemas --database "postgresql://pharma_dev_user:pharmadevpass@localhost:5432/pharma-dev?sslmode=disable" --verbose down
+run:
+	go run cmd/main.go
+gen-sqlc:
+	sqlc generate -f ./config/sqlc.yml
+.PHONY: generate_schema create_db_container create_db migrate_up migrate_down run gen-sqlc
