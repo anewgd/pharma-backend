@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:alpine
+    container_name: pharma-postgres
+    environment:
+      POSTGRES_USER: pharma_dev_user
+      POSTGRES_PASSWORD: pharmadevpass
+      POSTGRES_DB: pharma-dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - pharma_app_db_store:/var/lib/postgresql/data
+
+volumes:
+  pharma_app_db_store:
